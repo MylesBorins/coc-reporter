@@ -23,37 +23,51 @@ limitations under the License.
  * @param {!express:Response} res HTTP response context.
  */
 
-const { MessagingResponse } = require('twilio').twiml;
 const { WebClient } = require('@slack/client');
 
 const slackToken = process.env.SLACK_TOKEN;
-const channel = process.env.SLACK_CHANNEL
+const channel = process.env.SLACK_CHANNEL;
 
 const web = new WebClient(slackToken);
 
-exports.smsReceive = async (req, res) => {
-  const body = req.body.Body;
+function corsOptions(req, res) {
+  res.set('Access-Control-Allow-Methods', 'POST');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Max-Age', '3600');
+  res.status(204).send('');
+}
 
-  console.log(`received sms message: ${body}`);
+exports.websiteReceive = async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
 
-  const twiml = new MessagingResponse();
-  
+  if (req.method === 'OPTIONS') {
+    console.log('received options request');
+    corsOptions(req, res);
+    console.log('options response sent');
+    return;
+  }
+
+  const {report} = req.body;
+
+  let response;
+
+  console.log(`received sms message: ${report}`);
+
   try {
     await web.chat.postMessage({
       channel: channel,
-      text: `<!channel> report received from sms\n\n${body}`,
+      text: `<!channel> report received from web form\n\n${report}`,
     });
 
     console.log('message forwarded to team');
 
-    twiml.message('Our team has been notified of your anonymous report. If you feel comfortable please approach core team directly for follow up.');
+    response = 'Our team has been notified of your anonymous report. If you feel comfortable please approach core team directly for follow up.';
   }
   catch (e) {
     console.error('message not forwarded to team');
     console.error(e);
-    twiml.message('There was an error sending your message, please try again later.');
+    response = 'There was an error sending your message, please try again later.';
   }
-
-  res.writeHead(200, {'Content-Type': 'text/xml'});
-  res.end(twiml.toString());
+  res.status(200);
+  res.end(response);
 };

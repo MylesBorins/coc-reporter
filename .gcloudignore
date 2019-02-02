@@ -17,3 +17,8 @@ node_modules
 #!include:.gitignore
 experiments/
 config-example.json
+*.yaml
+*.yml
+*.md
+LICENSE
+web-reporter.js
